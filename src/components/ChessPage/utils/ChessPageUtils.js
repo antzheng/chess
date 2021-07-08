@@ -1,136 +1,94 @@
-// import all svgs
-import bishopDark from './../../../styles/assets/images/bishop-dark.svg';
-import kingDark from './../../../styles/assets/images/king-dark.svg';
-import knightDark from './../../../styles/assets/images/knight-dark.svg';
-import pawnDark from './../../../styles/assets/images/pawn-dark.svg';
-import queenDark from './../../../styles/assets/images/queen-dark.svg';
-import rookDark from './../../../styles/assets/images/rook-dark.svg';
-import bishopLight from './../../../styles/assets/images/bishop-light.svg';
-import kingLight from './../../../styles/assets/images/king-light.svg';
-import knightLight from './../../../styles/assets/images/knight-light.svg';
-import pawnLight from './../../../styles/assets/images/pawn-light.svg';
-import queenLight from './../../../styles/assets/images/queen-light.svg';
-import rookLight from './../../../styles/assets/images/rook-light.svg';
+/*
+--------------------------------------------------------------------------------------
+-------------------------------------- IMPORTS ---------------------------------------
+--------------------------------------------------------------------------------------
+*/
 
-// define intermediate variables for this file
-const backRow = [
-  'rook',
-  'knight',
-  'bishop',
-  'queen',
-  'king',
-  'bishop',
-  'knight',
-  'rook',
-];
+import { SVGMap, ChessEnum, DEFAULT, SIZE } from './ChessPageConstants';
+import { getAvailableMoves } from './ChessMovements';
 
-const pawnRow = Array(8).fill('pawn');
+/*
+--------------------------------------------------------------------------------------
+-------------------------------------- UTILITY ---------------------------------------
+--------------------------------------------------------------------------------------
+*/
 
-const pieces = {
-  bishopDark,
-  kingDark,
-  knightDark,
-  pawnDark,
-  queenDark,
-  rookDark,
-  bishopLight,
-  kingLight,
-  knightLight,
-  pawnLight,
-  queenLight,
-  rookLight,
-};
-
-// -------------------------- EXPORTS --------------------------
-
+// given a coordinate, returns whether it is out of bounds
 const isOutOfBounds = (row, col) => {
-  return row < 0 || row >= 8 || col < 0 || col >= 8;
+  return row < 0 || row >= SIZE || col < 0 || col >= SIZE;
 };
 
-export const isValidPiece = (piece) => {
-  return (
-    piece !== null && [...backRow, ...pawnRow].includes(piece.split('-')[0])
-  );
+// given a coordinate, returns name and color of the piece there
+const getPieceFromXY = (x, y, board) => {
+  if (board[x][y] === null) return [null, null];
+  return board[x][y].split('-');
 };
 
-// default board layout
-export const DEFAULT = [
-  backRow.map((pieces) => pieces + '-dark'),
-  pawnRow.map((pieces) => pieces + '-dark'),
-  ...Array(4)
-    .fill()
-    .map(() => Array(8).fill(null)),
-  pawnRow.map((pieces) => pieces + '-light'),
-  backRow.map((pieces) => pieces + '-light'),
-];
+// given piece name, check if valid piece
+const isValidPiece = (piece) => {
+  return piece !== null && Object.values(ChessEnum).includes(piece);
+};
 
-// get tile color
-export const getTileColor = ([row, col]) => {
+/*
+--------------------------------------------------------------------------------------
+------------------------------------ UI HELPERS --------------------------------------
+--------------------------------------------------------------------------------------
+*/
+
+// given a coordinate, return the classname for tile color
+const getTileColor = ([row, col]) => {
   const name = 'tile';
   const color = (row + col) % 2 ? 'tile-dark' : 'tile-light';
   return `${name} ${color}`;
 };
 
-// get whether or not this tile is active
-export const isActiveTile = (
-  [activeRow, activeCol],
-  [row, col],
-  availableMoves
-) => {
+// given active piece coordinates, current coordinates, and available moves
+// return whether this tile should be highlighted
+const isActiveTile = ([activeRow, activeCol], [row, col], availableMoves) => {
   return (
     (row === activeRow && col === activeCol) ||
     availableMoves.some(([x, y]) => x === row && y === col)
   );
 };
 
-// get image source for pieces
-export const getImageSrc = (piece, color) => {
+// given piece name and color, return the src for associated svg
+const getImageSrc = (piece, color) => {
   const key = piece + color.charAt(0).toUpperCase() + color.slice(1);
-  return pieces[key];
+  return SVGMap[key];
 };
 
-// get available moves for any piece (wrapper)
-const getAvailableMoves = (piece, row, col, color, board) => {
-  switch (piece) {
-    case 'bishop':
-      return availableBishopMoves(row, col, color, board);
-    case 'king':
-      return availableKingMoves(row, col, color, board);
-    case 'knight':
-      return [];
-    case 'pawn':
-      return availablePawnMoves(row, col, color, board);
-    case 'queen':
-      return availableQueenMoves(row, col, color, board);
-    case 'rook':
-      return availableRookMoves(row, col, color, board);
-    default:
-      return [];
-  }
-};
+/*
+--------------------------------------------------------------------------------------
+---------------------------------- MOVEMENT LOGIC ------------------------------------
+--------------------------------------------------------------------------------------
+*/
 
-// select a piece to move if possible
-export const choosePiece = ([row, col], props) => {
+// given coordinates, select piece if possible
+const choosePiece = ([row, col], props) => {
   // destructuring
-  const board = props.boardHandler[0];
-  const isWhiteMove = props.turnHandler[0];
-  const setActiveTile = props.activeHandler[1];
-  const setAvailableMoves = props.previewHandler[1];
+  const [board] = props.boardHandler;
+  const [isWhiteMove] = props.turnHandler;
+  const [, setActiveTile] = props.activeHandler;
+  const [, setAvailableMoves] = props.previewHandler;
+  const [piece, color] = getPieceFromXY(row, col, board);
 
   // if no piece at this location, stop
-  if (!isValidPiece(board[row][col])) return;
+  if (!isValidPiece(piece)) {
+    setActiveTile(null);
+    setAvailableMoves([]);
+    return;
+  }
 
   // if user selects one of their pieces, make it active
-  const [piece, color] = board[row][col].split('-');
-  const targetColor = isWhiteMove ? 'light' : 'dark';
+  const targetColor = isWhiteMove ? ChessEnum.LIGHT : ChessEnum.DARK;
   if (color === targetColor) {
     setActiveTile([row, col]);
     setAvailableMoves(getAvailableMoves(piece, row, col, color, board));
   }
 };
 
-// move pieces according to individual logic
-export const movePiece = ([rowInit, colInit], [rowDest, colDest], props) => {
+// given coordinates, try to move piece if possible
+const movePiece = ([rowInit, colInit], [rowDest, colDest], props) => {
   // destructuring
   const [isWhiteMove, setIsWhiteMove] = props.turnHandler;
   const [boardState, setBoardState] = props.boardHandler;
@@ -146,10 +104,8 @@ export const movePiece = ([rowInit, colInit], [rowDest, colDest], props) => {
 
   // TODO: check if moving this piece puts us in check
 
-  // get movable piece's name + color
-  const [piece, color] = boardState[rowInit][colInit].split('-');
-
-  // get available moves for this piece
+  // check if valid move for this piece
+  const [piece, color] = getPieceFromXY(rowInit, colInit, boardState);
   const availableMoves = getAvailableMoves(
     piece,
     rowInit,
@@ -157,9 +113,12 @@ export const movePiece = ([rowInit, colInit], [rowDest, colDest], props) => {
     color,
     boardState
   );
+  const isValidMove = availableMoves.some(
+    ([x, y]) => x === rowDest && y === colDest
+  );
 
-  // if clicked spot is available, move there
-  if (availableMoves.some(([x, y]) => x === rowDest && y === colDest)) {
+  // if valid, change board, else deselect
+  if (isValidMove) {
     // change a copy of the board
     const copy = boardState.map((row) => [...row]);
     copy[rowDest][colDest] = copy[rowInit][colInit];
@@ -174,192 +133,29 @@ export const movePiece = ([rowInit, colInit], [rowDest, colDest], props) => {
     setAvailableMoves([]);
     setBoardState(copy);
     setIsWhiteMove(!isWhiteMove);
+  } else {
+    choosePiece([rowDest, colDest], props);
   }
 };
 
-// a pawn can move:
-// - forward twice at the start
-// - forward once normally
-// - diagonally to take
-// - TODO: enpassant (diagonal if opponent pawn moved forward twice)
-// - TODO: promotion
-const availablePawnMoves = (row, col, color, board) => {
-  // possible moves
-  const possible = [];
+/*
+--------------------------------------------------------------------------------------
+-------------------------------------- EXPORTS ---------------------------------------
+--------------------------------------------------------------------------------------
+*/
 
-  // determine if still at beginning
-  const notMoved = row === 6;
-
-  // moving up (decreasing row index)
-  const direction = -1;
-
-  // handle diags
-  [
-    [row + direction, col - 1],
-    [row + direction, col + 1],
-  ].forEach(([x, y]) => {
-    // if out of bounds or empty, skip
-    if (isOutOfBounds(x, y)) return;
-    if (board[x][y] === null) return;
-
-    // if color is opposite, it means available
-    const targetColor = board[x][y].split('-')[1];
-    if (targetColor !== color) possible.push([x, y]);
-  });
-
-  // handle forward
-  const forward = [[row + direction, col]];
-  if (notMoved) forward.push([row + 2 * direction, col]);
-  forward.forEach(([x, y]) => {
-    if (!isOutOfBounds(x, y) && !isValidPiece(board[x][y]))
-      possible.push([x, y]);
-  });
-
-  // return possible moves
-  return possible;
-};
-
-// bishops can move diagonally
-const availableBishopMoves = (row, col, color, board) => {
-  // possible moves
-  const possible = [];
-
-  // go through all four diag directions
-  [
-    [-1, -1],
-    [-1, 1],
-    [1, -1],
-    [1, 1],
-  ].forEach(([dx, dy]) => {
-    for (let i = 1; i < 8; i++) {
-      const [x, y] = [row + dx * i, col + dy * i];
-
-      // stop when out of bounds
-      if (isOutOfBounds(x, y)) return;
-
-      // add if not blocked
-      if (!isValidPiece(board[x][y])) {
-        possible.push([x, y]);
-      }
-      // stop when blocked
-      else {
-        const targetColor = board[x][y].split('-')[1];
-        if (targetColor !== color) possible.push([x, y]);
-        return;
-      }
-    }
-  });
-
-  // return possible moves
-  return possible;
-};
-
-// rooks can move vertically + horizontally
-const availableRookMoves = (row, col, color, board) => {
-  // possible moves
-  const possible = [];
-
-  // go through all four directions
-  [
-    [-1, 0],
-    [1, 0],
-    [0, -1],
-    [0, 1],
-  ].forEach(([dx, dy]) => {
-    for (let i = 1; i < 8; i++) {
-      const [x, y] = [row + dx * i, col + dy * i];
-
-      // stop when out of bounds
-      if (isOutOfBounds(x, y)) return;
-
-      // add if not blocked
-      if (!isValidPiece(board[x][y])) {
-        possible.push([x, y]);
-      }
-      // stop when blocked
-      else {
-        const targetColor = board[x][y].split('-')[1];
-        if (targetColor !== color) possible.push([x, y]);
-        return;
-      }
-    }
-  });
-
-  // return possible moves
-  return possible;
-};
-
-// queen can do bishop + rook moves
-const availableQueenMoves = (row, col, color, board) => {
-  // possible moves
-  const possible = [];
-
-  // go through all eight directions
-  [
-    [-1, 0],
-    [1, 0],
-    [0, -1],
-    [0, 1],
-    [-1, -1],
-    [-1, 1],
-    [1, -1],
-    [1, 1],
-  ].forEach(([dx, dy]) => {
-    for (let i = 1; i < 8; i++) {
-      const [x, y] = [row + dx * i, col + dy * i];
-
-      // stop when out of bounds
-      if (isOutOfBounds(x, y)) return;
-
-      // add if not blocked
-      if (!isValidPiece(board[x][y])) {
-        possible.push([x, y]);
-      }
-      // stop when blocked
-      else {
-        const targetColor = board[x][y].split('-')[1];
-        if (targetColor !== color) possible.push([x, y]);
-        return;
-      }
-    }
-  });
-
-  // return possible moves
-  return possible;
-};
-
-// king moves around in all directions
-const availableKingMoves = (row, col, color, board) => {
-  // possible moves
-  const possible = [];
-
-  // go through all eight directions
-  [
-    [-1, 0],
-    [1, 0],
-    [0, -1],
-    [0, 1],
-    [-1, -1],
-    [-1, 1],
-    [1, -1],
-    [1, 1],
-  ].forEach(([dx, dy]) => {
-    const [x, y] = [row + dx, col + dy];
-
-    // can't be out of bounds
-    if (isOutOfBounds(x, y)) return;
-
-    // add if not blocked
-    if (!isValidPiece(board[x][y])) {
-      possible.push([x, y]);
-    }
-    // stop when blocked
-    else {
-      const targetColor = board[x][y].split('-')[1];
-      if (targetColor !== color) possible.push([x, y]);
-    }
-  });
-
-  // return possible moves
-  return possible;
+export {
+  // CONSTANTS
+  ChessEnum,
+  DEFAULT,
+  // FUNCTIONS
+  isActiveTile,
+  isOutOfBounds,
+  isValidPiece,
+  getImageSrc,
+  getPieceFromXY,
+  getTileColor,
+  // MOVEMENT
+  choosePiece,
+  movePiece,
 };

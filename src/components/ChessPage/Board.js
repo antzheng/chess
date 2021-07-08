@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import * as ChessPageUtils from './utils/ChessPageUtils';
 
-const ChessPiece = ({ name }) => {
-  if (!ChessPageUtils.isValidPiece(name)) return null;
-  const [piece, color] = name.split('-');
+const ChessPiece = ({ piece, color }) => {
+  if (!ChessPageUtils.isValidPiece(piece)) return null;
   return (
     <img
       className="chess-piece"
@@ -34,9 +33,13 @@ const Board = () => {
 
       {boardState.map((pieces, row) => (
         <div key={row} className="board-row">
-          {pieces.map((piece, col) => {
+          {pieces.map((_, col) => {
             // define variables and handlers
             const currentTile = [row, col];
+            const [name, color] = ChessPageUtils.getPieceFromXY(
+              ...currentTile,
+              boardState
+            );
             const clickHandler = () => {
               activeTile
                 ? ChessPageUtils.movePiece(activeTile, currentTile, props)
@@ -56,7 +59,7 @@ const Board = () => {
                     currentTile,
                     availableMoves
                   ) && <div className="active"></div>}
-                <ChessPiece name={piece} />
+                <ChessPiece piece={name} color={color} />
               </div>
             );
           })}

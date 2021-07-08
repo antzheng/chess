@@ -1,5 +1,5 @@
 import React from 'react';
-import Board from './../components/ChessPage/Board';
+import Board from '../components/ChessPage/Board';
 
 const ChessPage = () => (
   <div className="chess-page">
