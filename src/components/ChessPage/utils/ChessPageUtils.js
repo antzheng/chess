@@ -29,6 +29,54 @@ const isValidPiece = (piece) => {
   return piece !== null && Object.values(ChessEnum).includes(piece);
 };
 
+// given start and end coords to move a piece
+// return new board (flipped)
+const generateNewBoard = (startX, startY, endX, endY, board) => {
+  const copy = board.map((row) => [...row]);
+  copy[endX][endY] = copy[startX][startY];
+  copy[startX][startY] = null;
+  copy.reverse();
+  copy.forEach((row) => row.reverse());
+  return copy;
+};
+
+/*
+if can't move:
+  if more than 1 checking: checkmate
+  if can't take and can't block: checkmate
+*/
+
+// given a color and the board
+// return if the king of that color is in check
+const isInCheck = (color, board) => {
+  let kingCoords = null;
+  const availableMoves = [];
+
+  // iterate through whole board
+  for (let i = 0; i < SIZE; i++) {
+    for (let j = 0; j < SIZE; j++) {
+      const [targetPiece, targetColor] = getPieceFromXY(i, j, board);
+
+      // skip blank tiles
+      if (!isValidPiece(targetPiece)) continue;
+
+      // check opponent moves
+      if (color !== targetColor) {
+        availableMoves.push(
+          ...getAvailableMoves(targetPiece, i, j, targetColor, board, false)
+        );
+      }
+      // check for our king's position
+      else if (targetPiece === ChessEnum.KING) {
+        kingCoords = [i, j];
+      }
+    }
+  }
+  return availableMoves.some(
+    ([x, y]) => x === kingCoords[0] && y === kingCoords[1]
+  );
+};
+
 /*
 --------------------------------------------------------------------------------------
 ------------------------------------ UI HELPERS --------------------------------------
@@ -119,19 +167,19 @@ const movePiece = ([rowInit, colInit], [rowDest, colDest], props) => {
 
   // if valid, change board, else deselect
   if (isValidMove) {
-    // change a copy of the board
-    const copy = boardState.map((row) => [...row]);
-    copy[rowDest][colDest] = copy[rowInit][colInit];
-    copy[rowInit][colInit] = null;
-
-    // invert copy for next player
-    copy.reverse();
-    copy.forEach((row) => row.reverse());
+    // get new updated board
+    const newBoard = generateNewBoard(
+      rowInit,
+      colInit,
+      rowDest,
+      colDest,
+      boardState
+    );
 
     // change state
     setActiveTile(null);
     setAvailableMoves([]);
-    setBoardState(copy);
+    setBoardState(newBoard);
     setIsWhiteMove(!isWhiteMove);
   } else {
     choosePiece([rowDest, colDest], props);
@@ -150,11 +198,13 @@ export {
   DEFAULT,
   // FUNCTIONS
   isActiveTile,
+  isInCheck,
   isOutOfBounds,
   isValidPiece,
   getImageSrc,
   getPieceFromXY,
   getTileColor,
+  generateNewBoard,
   // MOVEMENT
   choosePiece,
   movePiece,

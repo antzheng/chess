@@ -39,6 +39,7 @@
 $tile-dark-color: #ad6d4a;
 $tile-light-color: #e8be97;
 $tile-active-color: #5ecf3c;
+$tile-hover-color: #fcec62;
 $piece-dark-color: #501c0b;
 $piece-light-color: #fff5e7;
 
@@ -128,8 +129,31 @@ body {
   opacity: 0.6;
 }
 
+.hovered {
+  position: absolute;
+  background-color: $tile-hover-color;
+  width: 100%;
+  height: 100%;
+  opacity: 0.6;
+}
+
 .chess-piece {
   width: 70%;
   height: 70%;
   z-index: 100;
+}
+
+// ------------------------------------------------------------------
+// ------------------------ media queries ---------------------------
+// ------------------------------------------------------------------
+
+@media screen and (max-width: 60vh) {
+  html,
+  body {
+    position: fixed;
+  }
+
+  .ultra {
+    height: 90vh;
+  }
 }

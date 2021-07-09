@@ -4,7 +4,13 @@
 --------------------------------------------------------------------------------------
 */
 
-import { isOutOfBounds, isValidPiece, getPieceFromXY } from './ChessPageUtils';
+import {
+  isInCheck,
+  isOutOfBounds,
+  isValidPiece,
+  generateNewBoard,
+  getPieceFromXY,
+} from './ChessPageUtils';
 
 /*
 --------------------------------------------------------------------------------------
@@ -14,7 +20,7 @@ import { isOutOfBounds, isValidPiece, getPieceFromXY } from './ChessPageUtils';
 
 // given a piece, position, color, and the board
 // return an array of coordinates representing available moves
-const getAvailableMoves = (piece, row, col, color, board) => {
+const getAvailableMoves = (piece, row, col, color, board, initial = true) => {
   const moveHandler = {
     bishop: availableBishopMoves,
     king: availableKingMoves,
@@ -23,10 +29,20 @@ const getAvailableMoves = (piece, row, col, color, board) => {
     queen: availableQueenMoves,
     rook: availableRookMoves,
   };
-  return moveHandler[piece](row, col, color, board);
+  return moveHandler[piece](row, col, color, board, initial);
 };
 
-const generatePossibleMoves = (directions, row, col, color, board, expand) => {
+// given directions, a starting position, the color, and the board,
+// return a list of possible moves for this piece
+const generatePossibleMoves = (
+  directions,
+  row,
+  col,
+  color,
+  board,
+  expand,
+  initial
+) => {
   // possible moves
   const possible = [];
 
@@ -53,6 +69,15 @@ const generatePossibleMoves = (directions, row, col, color, board, expand) => {
     }
   });
 
+  // prevent recursively checking
+  if (!initial) return possible;
+
+  // see if any of the moves will put the king in check
+  for (const [x, y] of possible) {
+    const newBoard = generateNewBoard(row, col, x, y, board);
+    if (isInCheck(color, newBoard)) return [];
+  }
+
   // return possible moves
   return possible;
 };
@@ -69,7 +94,7 @@ const generatePossibleMoves = (directions, row, col, color, board, expand) => {
 // - diagonally to take
 // - TODO: enpassant (diagonal if opponent pawn moved forward twice)
 // - TODO: promotion
-const availablePawnMoves = (row, col, color, board) => {
+const availablePawnMoves = (row, col, color, board, initial) => {
   // possible moves
   const possible = [];
 
@@ -110,34 +135,59 @@ const availablePawnMoves = (row, col, color, board) => {
     possible.push([x, y]);
   });
 
+  // prevent recursively checking
+  if (!initial) return possible;
+
+  // see if any of the moves will put the king in check
+  for (const [x, y] of possible) {
+    const newBoard = generateNewBoard(row, col, x, y, board);
+    if (isInCheck(color, newBoard)) return [];
+  }
+
   // return possible moves
   return possible;
 };
 
 // bishops can move diagonally
-const availableBishopMoves = (row, col, color, board) => {
+const availableBishopMoves = (row, col, color, board, initial) => {
   const directions = [
     [-1, -1],
     [-1, 1],
     [1, -1],
     [1, 1],
   ];
-  return generatePossibleMoves(directions, row, col, color, board, true);
+  return generatePossibleMoves(
+    directions,
+    row,
+    col,
+    color,
+    board,
+    true,
+    initial
+  );
 };
 
 // rooks can move vertically + horizontally
-const availableRookMoves = (row, col, color, board) => {
+const availableRookMoves = (row, col, color, board, initial) => {
   const directions = [
     [-1, 0],
     [1, 0],
     [0, -1],
     [0, 1],
   ];
-  return generatePossibleMoves(directions, row, col, color, board, true);
+  return generatePossibleMoves(
+    directions,
+    row,
+    col,
+    color,
+    board,
+    true,
+    initial
+  );
 };
 
 // queen can do bishop + rook moves
-const availableQueenMoves = (row, col, color, board) => {
+const availableQueenMoves = (row, col, color, board, initial) => {
   const directions = [
     [-1, 0],
     [1, 0],
@@ -148,11 +198,19 @@ const availableQueenMoves = (row, col, color, board) => {
     [1, -1],
     [1, 1],
   ];
-  return generatePossibleMoves(directions, row, col, color, board, true);
+  return generatePossibleMoves(
+    directions,
+    row,
+    col,
+    color,
+    board,
+    true,
+    initial
+  );
 };
 
 // king moves around in all directions
-const availableKingMoves = (row, col, color, board) => {
+const availableKingMoves = (row, col, color, board, initial) => {
   const directions = [
     [-1, 0],
     [1, 0],
@@ -163,11 +221,19 @@ const availableKingMoves = (row, col, color, board) => {
     [1, -1],
     [1, 1],
   ];
-  return generatePossibleMoves(directions, row, col, color, board, false);
+  return generatePossibleMoves(
+    directions,
+    row,
+    col,
+    color,
+    board,
+    false,
+    initial
+  );
 };
 
 // knight moves in an L
-const availableKnightMoves = (row, col, color, board) => {
+const availableKnightMoves = (row, col, color, board, initial) => {
   const directions = [
     [-2, -1],
     [-2, 1],
@@ -178,7 +244,15 @@ const availableKnightMoves = (row, col, color, board) => {
     [2, -1],
     [2, 1],
   ];
-  return generatePossibleMoves(directions, row, col, color, board, false);
+  return generatePossibleMoves(
+    directions,
+    row,
+    col,
+    color,
+    board,
+    false,
+    initial
+  );
 };
 
 /*
