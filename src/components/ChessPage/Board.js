@@ -76,6 +76,14 @@ const Board = () => {
               }
             };
 
+            // check if checkmated
+            if (name === ChessEnum.KING) {
+              if (ChessPageUtils.isInCheck(color, boardState)) {
+                const checkmate = ChessPageUtils.isCheckMate(color, boardState);
+                console.log('checking if checkmated: ', checkmate);
+              }
+            }
+
             // render actual tile
             return (
               <div

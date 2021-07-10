@@ -72,14 +72,11 @@ const generatePossibleMoves = (
   // prevent recursively checking
   if (!initial) return possible;
 
-  // see if any of the moves will put the king in check
-  for (const [x, y] of possible) {
+  // filter out all moves that would expose king to check
+  return possible.filter(([x, y]) => {
     const newBoard = generateNewBoard(row, col, x, y, board);
-    if (isInCheck(color, newBoard)) return [];
-  }
-
-  // return possible moves
-  return possible;
+    return !isInCheck(color, newBoard);
+  });
 };
 
 /*
@@ -122,7 +119,15 @@ const availablePawnMoves = (row, col, color, board, initial) => {
 
   // handle forward
   const forward = [[row + direction, col]];
-  if (notMoved) forward.push([row + 2 * direction, col]);
+
+  // can move twice if not moved and not blocked
+  if (notMoved) {
+    const [piece] = getPieceFromXY(...forward[0], board);
+    const blocked = isValidPiece(piece);
+    if (!blocked) forward.push([row + 2 * direction, col]);
+  }
+
+  // filter valid moves
   forward.forEach(([x, y]) => {
     // if out of bounds or empty, skip
     if (isOutOfBounds(x, y)) return;

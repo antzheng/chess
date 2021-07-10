@@ -45,6 +45,71 @@ if can't move:
   if more than 1 checking: checkmate
   if can't take and can't block: checkmate
 */
+// given a color and the board
+// and assuming the king is in check
+// return whether or not this is checkmate
+const isCheckMate = (color, board) => {
+  // find the king and opposing pieces
+  let kingCoords = null;
+  const opposing = [];
+  const supporting = [];
+  for (let i = 0; i < SIZE; i++) {
+    for (let j = 0; j < SIZE; j++) {
+      const [targetPiece, targetColor] = getPieceFromXY(i, j, board);
+
+      // skip blank tiles
+      if (!isValidPiece(targetPiece)) continue;
+
+      // determine which side this piece is on
+      const side = targetPiece === color ? supporting : opposing;
+
+      // add pieces
+      if (targetPiece !== ChessEnum.KING) {
+        side.push({
+          piece: targetPiece,
+          coords: [i, j],
+          moves: getAvailableMoves(targetPiece, i, j, targetColor, board),
+        });
+      }
+      // find our king
+      else if (targetColor === color) {
+        kingCoords = [i, j];
+      }
+    }
+  }
+
+  // check if king can move
+  const possible = getAvailableMoves(
+    ChessEnum.KING,
+    ...kingCoords,
+    color,
+    board
+  );
+  if (possible.length === 0) {
+    // find the pieces that threaten the king
+    const threatening = [];
+    opposing.forEach(({ piece, coords, moves }) => {
+      // if this piece can move to where king is, it is checking the king
+      if (moves.some(([x, y]) => x === kingCoords[0] && y === kingCoords[1])) {
+        threatening.push({ piece, coords });
+      }
+    });
+
+    // checkmate if king can't move and multiple pieces check it
+    if (threatening.length > 1) return true;
+
+    // checkmate if threatening piece can't be taken or blocked
+    const canRemoveObstacle = supporting.some(({ piece, coords, moves }) => {
+      const canTakeOrBlock = moves.some(([x, y]) => {
+        const newBoard = generateNewBoard(...coords, x, y, board);
+        return !isInCheck(color, newBoard);
+      });
+      return canTakeOrBlock;
+    });
+    if (!canRemoveObstacle) return true;
+  }
+  return false;
+};
 
 // given a color and the board
 // return if the king of that color is in check
@@ -150,8 +215,6 @@ const movePiece = ([rowInit, colInit], [rowDest, colDest], props) => {
     return;
   }
 
-  // TODO: check if moving this piece puts us in check
-
   // check if valid move for this piece
   const [piece, color] = getPieceFromXY(rowInit, colInit, boardState);
   const availableMoves = getAvailableMoves(
@@ -198,6 +261,7 @@ export {
   DEFAULT,
   // FUNCTIONS
   isActiveTile,
+  isCheckMate,
   isInCheck,
   isOutOfBounds,
   isValidPiece,
