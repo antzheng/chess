@@ -33,10 +33,23 @@ const isValidPiece = (piece) => {
 // return new board (flipped)
 const generateNewBoard = (startX, startY, endX, endY, board) => {
   const copy = board.map((row) => [...row]);
+
+  // check enpassant
+  const [piece] = getPieceFromXY(endX, endY, copy);
+  if (piece === 'enpassant') copy[endX + 1][endY] = null;
+
   copy[endX][endY] = copy[startX][startY];
   copy[startX][startY] = null;
   copy.reverse();
   copy.forEach((row) => row.reverse());
+
+  // clear invalid pieces, reinforce empty tiles
+  for (let i = 0; i < SIZE; i++) {
+    for (let j = 0; j < SIZE; j++) {
+      const [piece] = getPieceFromXY(i, j, copy);
+      if (!isValidPiece(piece)) copy[i][j] = null;
+    }
+  }
   return copy;
 };
 
@@ -238,6 +251,11 @@ const movePiece = ([rowInit, colInit], [rowDest, colDest], props) => {
       colDest,
       boardState
     );
+
+    // add en passant
+    if (piece === ChessEnum.PAWN && rowDest === rowInit - 2) {
+      newBoard[2][SIZE - 1 - colDest] = 'enpassant-' + color;
+    }
 
     // change state
     setActiveTile(null);

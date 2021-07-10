@@ -20,6 +20,8 @@ const Board = () => {
   const [activeTile, setActiveTile] = useState(null);
   const [availableMoves, setAvailableMoves] = useState([]);
   const [hoveredTile, setHoveredTile] = useState(null);
+  const [isCheck, setIsCheck] = useState(false);
+  const [isCheckMate, setIsCheckMate] = useState(false);
 
   const props = {
     turnHandler: [isWhiteMove, setIsWhiteMove],
@@ -28,12 +30,26 @@ const Board = () => {
     previewHandler: [availableMoves, setAvailableMoves],
   };
 
+  let text = (
+    <div className="turn-text">
+      {isCheck && <span style={{ color: 'red' }}>CHECK: </span>}
+      <span className="highlight">{isWhiteMove ? 'WHITE' : 'BLACK'}</span> to
+      move!
+    </div>
+  );
+
+  if (isCheckMate)
+    text = (
+      <div className="turn-text">
+        <span style={{ color: 'CornflowerBlue' }}>
+          {isWhiteMove ? 'BLACK' : 'WHITE'} WINS!
+        </span>
+      </div>
+    );
+
   return (
     <div className="board">
-      <div className="turn-text">
-        <span>{isWhiteMove ? 'WHITE' : 'BLACK'}</span> to move!
-      </div>
-
+      {text}
       {boardState.map((pieces, row) => (
         <div key={row} className="board-row">
           {pieces.map((_, col) => {
@@ -77,10 +93,19 @@ const Board = () => {
             };
 
             // check if checkmated
-            if (name === ChessEnum.KING) {
+            if (!isCheckMate && name === ChessEnum.KING && isDraggable) {
+              // check
               if (ChessPageUtils.isInCheck(color, boardState)) {
                 const checkmate = ChessPageUtils.isCheckMate(color, boardState);
-                console.log('checking if checkmated: ', checkmate);
+                if (checkmate) {
+                  if (!isCheckMate) setIsCheckMate(true);
+                } else {
+                  if (!isCheck) setIsCheck(true);
+                }
+              }
+              // not check
+              else {
+                if (isCheck) setIsCheck(false);
               }
             }
 
