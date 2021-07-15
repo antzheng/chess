@@ -14,6 +14,33 @@ const ChessPiece = ({ piece, color, isDraggable }) => {
   );
 };
 
+const PromotionModal = ({ color, promotionClickHandler }) => {
+  return (
+    <div className="mask">
+      <div className="promotion-modal">
+        {[
+          ChessEnum.QUEEN,
+          ChessEnum.KNIGHT,
+          ChessEnum.ROOK,
+          ChessEnum.BISHOP,
+        ].map((piece) => (
+          <div
+            className="modal-tile"
+            onClick={() => promotionClickHandler(piece, color)}
+          >
+            <img
+              className="modal-pieces"
+              draggable={false}
+              src={ChessPageUtils.getImageSrc(piece, color)}
+              alt="chess piece"
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const Board = () => {
   const [isWhiteMove, setIsWhiteMove] = useState(true);
   const [boardState, setBoardState] = useState(ChessPageUtils.DEFAULT);
@@ -22,12 +49,14 @@ const Board = () => {
   const [hoveredTile, setHoveredTile] = useState(null);
   const [isCheck, setIsCheck] = useState(false);
   const [isCheckMate, setIsCheckMate] = useState(false);
+  const [promotionTile, setPromotionTile] = useState(null); // CHANGE THIS
 
   const props = {
     turnHandler: [isWhiteMove, setIsWhiteMove],
     boardHandler: [boardState, setBoardState],
     activeHandler: [activeTile, setActiveTile],
     previewHandler: [availableMoves, setAvailableMoves],
+    promotionHandler: [promotionTile, setPromotionTile],
   };
 
   let text = (
@@ -47,9 +76,26 @@ const Board = () => {
       </div>
     );
 
+  const promotionClickHandler = (piece, color) => {
+    const [x, y] = promotionTile;
+    const copy = boardState.map((row) => [...row]);
+    copy[x][y] = piece + '-' + color;
+
+    // change state
+    setPromotionTile(null);
+    setBoardState(ChessPageUtils.flipBoard(copy));
+    setIsWhiteMove(!isWhiteMove);
+  };
+
   return (
     <div className="board">
       {text}
+      {promotionTile && (
+        <PromotionModal
+          color={isWhiteMove ? ChessEnum.LIGHT : ChessEnum.DARK}
+          promotionClickHandler={promotionClickHandler}
+        />
+      )}
       {boardState.map((pieces, row) => (
         <div key={row} className="board-row">
           {pieces.map((_, col) => {
@@ -92,11 +138,14 @@ const Board = () => {
               }
             };
 
-            // check if checkmated
+            // check if our king is checkmated
             if (!isCheckMate && name === ChessEnum.KING && isDraggable) {
-              // check
-              if (ChessPageUtils.isInCheck(color, boardState)) {
-                const checkmate = ChessPageUtils.isCheckMate(color, boardState);
+              // must flip board for this
+              const flipped = ChessPageUtils.flipBoard(boardState);
+
+              // check with flipped board
+              if (ChessPageUtils.isInCheck(color, flipped)) {
+                const checkmate = ChessPageUtils.isCheckMate(color, flipped);
                 if (checkmate) {
                   if (!isCheckMate) setIsCheckMate(true);
                 } else {

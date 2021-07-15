@@ -4,7 +4,9 @@
 --------------------------------------------------------------------------------------
 */
 
+import { SIZE } from './ChessPageConstants';
 import {
+  flipBoard,
   isInCheck,
   isOutOfBounds,
   isValidPiece,
@@ -20,7 +22,15 @@ import {
 
 // given a piece, position, color, and the board
 // return an array of coordinates representing available moves
-const getAvailableMoves = (piece, row, col, color, board, initial = true) => {
+const getAvailableMoves = (
+  piece,
+  row,
+  col,
+  color,
+  board,
+  initial = true,
+  checkCastle = true
+) => {
   const moveHandler = {
     bishop: availableBishopMoves,
     king: availableKingMoves,
@@ -29,7 +39,7 @@ const getAvailableMoves = (piece, row, col, color, board, initial = true) => {
     queen: availableQueenMoves,
     rook: availableRookMoves,
   };
-  return moveHandler[piece](row, col, color, board, initial);
+  return moveHandler[piece](row, col, color, board, initial, checkCastle);
 };
 
 // given directions, a starting position, the color, and the board,
@@ -215,7 +225,14 @@ const availableQueenMoves = (row, col, color, board, initial) => {
 };
 
 // king moves around in all directions
-const availableKingMoves = (row, col, color, board, initial) => {
+const availableKingMoves = (
+  row,
+  col,
+  color,
+  board,
+  initial,
+  checkCastle = true
+) => {
   const directions = [
     [-1, 0],
     [1, 0],
@@ -226,7 +243,7 @@ const availableKingMoves = (row, col, color, board, initial) => {
     [1, -1],
     [1, 1],
   ];
-  return generatePossibleMoves(
+  const possible = generatePossibleMoves(
     directions,
     row,
     col,
@@ -235,6 +252,79 @@ const availableKingMoves = (row, col, color, board, initial) => {
     false,
     initial
   );
+
+  // deal with castling
+  const [, , kingUnmoved] = getPieceFromXY(row, col, board);
+
+  // generate simulated board
+  const flipped = flipBoard(board);
+
+  if (checkCastle && kingUnmoved && !isInCheck(color, flipped)) {
+    if (isValidCastlePosition(row, col, board, true, flipped))
+      possible.push([row, col - 2]);
+    if (isValidCastlePosition(row, col, board, false, flipped))
+      possible.push([row, col + 2]);
+  }
+
+  return possible;
+};
+
+const isValidCastlePosition = (row, col, board, isLeftSide, flipped) => {
+  const rookCol = isLeftSide ? 0 : SIZE - 1;
+  const [, color, unmoved] = getPieceFromXY(row, rookCol, board);
+
+  // if rook is moved, can't castle this way
+  if (!unmoved) return false;
+
+  // define directions
+  const direction = isLeftSide ? -1 : 1;
+  const once = [row, col + direction];
+  const twice = [row, col + 2 * direction];
+
+  // spots must be empty
+  const occupied = [once, twice].some(([x, y]) => {
+    const [piece] = getPieceFromXY(x, y, board);
+    return isValidPiece(piece);
+  });
+  if (occupied) return false;
+
+  // can't move through check
+  const availableMoves = [];
+  for (let i = 0; i < SIZE; i++) {
+    for (let j = 0; j < SIZE; j++) {
+      const [targetPiece, targetColor] = getPieceFromXY(i, j, flipped);
+
+      // skip blank tiles
+      if (!isValidPiece(targetPiece)) continue;
+
+      // check opponent moves
+      if (color !== targetColor) {
+        availableMoves.push(
+          ...getAvailableMoves(
+            targetPiece,
+            i,
+            j,
+            targetColor,
+            flipped,
+            false,
+            false
+          )
+        );
+      }
+    }
+  }
+
+  // check if spots are in check
+  const spotInCheck = availableMoves.some(([x, y]) => {
+    x = SIZE - 1 - x;
+    y = SIZE - 1 - y;
+    return (
+      (x === once[0] && y === once[1]) || (x === twice[0] && y === twice[1])
+    );
+  });
+
+  // can castle if spots aren't in check
+  return !spotInCheck;
 };
 
 // knight moves in an L

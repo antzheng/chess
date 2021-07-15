@@ -151,6 +151,46 @@ img {
   z-index: 100;
 }
 
+.mask {
+  position: absolute;
+  z-index: 200;
+  height: 100%;
+  width: 100%;
+}
+
+.promotion-modal {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  margin: auto;
+  width: 55%;
+  height: 55%;
+  display: flex;
+  flex-wrap: wrap;
+  border: 1px solid black;
+}
+
+.modal-tile {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 50%;
+  width: 50%;
+  background-color: #4070da;
+
+  &:hover {
+    cursor: pointer;
+    background-color: $tile-active-color;
+  }
+}
+
+.modal-pieces {
+  width: 50%;
+  height: 50%;
+}
+
 // ------------------------------------------------------------------
 // ------------------------ media queries ---------------------------
 // ------------------------------------------------------------------

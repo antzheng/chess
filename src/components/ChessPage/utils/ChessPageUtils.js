@@ -18,9 +18,9 @@ const isOutOfBounds = (row, col) => {
   return row < 0 || row >= SIZE || col < 0 || col >= SIZE;
 };
 
-// given a coordinate, returns name and color of the piece there
+// given a coordinate, returns name, color, and if piece was unmoved
 const getPieceFromXY = (x, y, board) => {
-  if (board[x][y] === null) return [null, null];
+  if (board[x][y] === null) return [null, null, null];
   return board[x][y].split('-');
 };
 
@@ -29,16 +29,27 @@ const isValidPiece = (piece) => {
   return piece !== null && Object.values(ChessEnum).includes(piece);
 };
 
+// given a board, flips it
+const flipBoard = (board) => {
+  const flipped = board.map((row) => [...row]);
+  flipped.reverse();
+  flipped.forEach((row) => row.reverse());
+  return flipped;
+};
+
 // given start and end coords to move a piece
 // return new board (flipped)
 const generateNewBoard = (startX, startY, endX, endY, board) => {
   const copy = board.map((row) => [...row]);
 
   // check enpassant
-  const [piece] = getPieceFromXY(endX, endY, copy);
-  if (piece === 'enpassant') copy[endX + 1][endY] = null;
+  const [endPiece] = getPieceFromXY(endX, endY, copy);
+  if (endPiece === 'enpassant') copy[endX + 1][endY] = null;
 
-  copy[endX][endY] = copy[startX][startY];
+  // get rid of unmoved flag if there
+  const [startPiece, startColor] = getPieceFromXY(startX, startY, board);
+
+  copy[endX][endY] = startPiece + '-' + startColor;
   copy[startX][startY] = null;
   copy.reverse();
   copy.forEach((row) => row.reverse());
@@ -112,7 +123,7 @@ const isCheckMate = (color, board) => {
     if (threatening.length > 1) return true;
 
     // checkmate if threatening piece can't be taken or blocked
-    const canRemoveObstacle = supporting.some(({ piece, coords, moves }) => {
+    const canRemoveObstacle = supporting.some(({ coords, moves }) => {
       const canTakeOrBlock = moves.some(([x, y]) => {
         const newBoard = generateNewBoard(...coords, x, y, board);
         return !isInCheck(color, newBoard);
@@ -130,6 +141,9 @@ const isInCheck = (color, board) => {
   let kingCoords = null;
   const availableMoves = [];
 
+  // create a copy
+  board = board.map((row) => [...row]);
+
   // iterate through whole board
   for (let i = 0; i < SIZE; i++) {
     for (let j = 0; j < SIZE; j++) {
@@ -137,6 +151,9 @@ const isInCheck = (color, board) => {
 
       // skip blank tiles
       if (!isValidPiece(targetPiece)) continue;
+
+      // get rid of unmoved flags for check
+      board[i][j] = targetPiece + '-' + targetColor;
 
       // check opponent moves
       if (color !== targetColor) {
@@ -220,6 +237,7 @@ const movePiece = ([rowInit, colInit], [rowDest, colDest], props) => {
   const [boardState, setBoardState] = props.boardHandler;
   const [, setActiveTile] = props.activeHandler;
   const [, setAvailableMoves] = props.previewHandler;
+  const [, setPromotionTile] = props.promotionHandler;
 
   // deselect if choosing same highlighted piece
   if (rowInit === rowDest && colInit === colDest) {
@@ -252,9 +270,30 @@ const movePiece = ([rowInit, colInit], [rowDest, colDest], props) => {
       boardState
     );
 
-    // add en passant
+    // add en passant (board is now flipped)
     if (piece === ChessEnum.PAWN && rowDest === rowInit - 2) {
       newBoard[2][SIZE - 1 - colDest] = 'enpassant-' + color;
+    }
+
+    // add castling (board is now flipped)
+    if (
+      piece === ChessEnum.KING &&
+      [colInit - 2, colInit + 2].includes(colDest)
+    ) {
+      const direction = colDest < colInit ? 1 : -1;
+      const rookCol = colDest < colInit ? SIZE - 1 : 0;
+      newBoard[0][rookCol] = null;
+      newBoard[0][SIZE - 1 - (colDest + direction)] =
+        ChessEnum.ROOK + '-' + color;
+    }
+
+    // add promotion (board is now flipped)
+    if (piece === ChessEnum.PAWN && rowDest === 0) {
+      setActiveTile(null);
+      setAvailableMoves([]);
+      setBoardState(flipBoard(newBoard));
+      setPromotionTile([rowDest, colDest]);
+      return;
     }
 
     // change state
@@ -278,6 +317,7 @@ export {
   ChessEnum,
   DEFAULT,
   // FUNCTIONS
+  flipBoard,
   isActiveTile,
   isCheckMate,
   isInCheck,

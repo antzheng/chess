@@ -70,11 +70,11 @@ const backRow = [
 ];
 
 export const DEFAULT = [
-  backRow.map((pieces) => pieces + '-dark'),
-  pawnRow.map((pieces) => pieces + '-dark'),
+  backRow.map((pieces) => pieces + '-dark-unmoved'),
+  pawnRow.map((pieces) => pieces + '-dark-unmoved'),
   ...Array(SIZE - 4)
     .fill()
     .map(() => Array(SIZE).fill(null)),
-  pawnRow.map((pieces) => pieces + '-light'),
-  backRow.map((pieces) => pieces + '-light'),
+  pawnRow.map((pieces) => pieces + '-light-unmoved'),
+  backRow.map((pieces) => pieces + '-light-unmoved'),
 ];
