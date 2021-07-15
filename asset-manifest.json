@@ -1,0 +1,33 @@
+{
+  "files": {
+    "main.css": "/chess/static/css/main.f36b088a.chunk.css",
+    "main.js": "/chess/static/js/main.84937a2a.chunk.js",
+    "main.js.map": "/chess/static/js/main.84937a2a.chunk.js.map",
+    "runtime-main.js": "/chess/static/js/runtime-main.b9e0870b.js",
+    "runtime-main.js.map": "/chess/static/js/runtime-main.b9e0870b.js.map",
+    "static/js/2.5c77a88d.chunk.js": "/chess/static/js/2.5c77a88d.chunk.js",
+    "static/js/2.5c77a88d.chunk.js.map": "/chess/static/js/2.5c77a88d.chunk.js.map",
+    "index.html": "/chess/index.html",
+    "static/css/main.f36b088a.chunk.css.map": "/chess/static/css/main.f36b088a.chunk.css.map",
+    "static/js/2.5c77a88d.chunk.js.LICENSE.txt": "/chess/static/js/2.5c77a88d.chunk.js.LICENSE.txt",
+    "static/media/App.scss": "/chess/static/media/Montserrat-Regular.3cd78665.ttf",
+    "static/media/bishop-dark.99ecd7c8.svg": "/chess/static/media/bishop-dark.99ecd7c8.svg",
+    "static/media/bishop-light.fb973169.svg": "/chess/static/media/bishop-light.fb973169.svg",
+    "static/media/king-dark.044fe330.svg": "/chess/static/media/king-dark.044fe330.svg",
+    "static/media/king-light.f0c34dda.svg": "/chess/static/media/king-light.f0c34dda.svg",
+    "static/media/knight-dark.6383ac9d.svg": "/chess/static/media/knight-dark.6383ac9d.svg",
+    "static/media/knight-light.00236166.svg": "/chess/static/media/knight-light.00236166.svg",
+    "static/media/pawn-dark.ce285b7c.svg": "/chess/static/media/pawn-dark.ce285b7c.svg",
+    "static/media/pawn-light.8edd8ce1.svg": "/chess/static/media/pawn-light.8edd8ce1.svg",
+    "static/media/queen-dark.35ebf88c.svg": "/chess/static/media/queen-dark.35ebf88c.svg",
+    "static/media/queen-light.0e2777be.svg": "/chess/static/media/queen-light.0e2777be.svg",
+    "static/media/rook-dark.c65697c2.svg": "/chess/static/media/rook-dark.c65697c2.svg",
+    "static/media/rook-light.2f973e2c.svg": "/chess/static/media/rook-light.2f973e2c.svg"
+  },
+  "entrypoints": [
+    "static/js/runtime-main.b9e0870b.js",
+    "static/js/2.5c77a88d.chunk.js",
+    "static/css/main.f36b088a.chunk.css",
+    "static/js/main.84937a2a.chunk.js"
+  ]
+}
