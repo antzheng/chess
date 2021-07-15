@@ -77,6 +77,7 @@ const isCheckMate = (color, board) => {
   let kingCoords = null;
   const opposing = [];
   const supporting = [];
+  const flipped = flipBoard(board);
   for (let i = 0; i < SIZE; i++) {
     for (let j = 0; j < SIZE; j++) {
       const [targetPiece, targetColor] = getPieceFromXY(i, j, board);
@@ -85,14 +86,21 @@ const isCheckMate = (color, board) => {
       if (!isValidPiece(targetPiece)) continue;
 
       // determine which side this piece is on
-      const side = targetPiece === color ? supporting : opposing;
+      let side = opposing;
+      let simulated = board;
+      let [x, y] = [i, j];
+      if (targetColor === color) {
+        side = supporting;
+        simulated = flipped;
+        [x, y] = [SIZE - 1 - x, SIZE - 1 - y];
+      }
 
       // add pieces
       if (targetPiece !== ChessEnum.KING) {
         side.push({
           piece: targetPiece,
-          coords: [i, j],
-          moves: getAvailableMoves(targetPiece, i, j, targetColor, board),
+          coords: [x, y],
+          moves: getAvailableMoves(targetPiece, x, y, targetColor, simulated),
         });
       }
       // find our king
@@ -105,9 +113,10 @@ const isCheckMate = (color, board) => {
   // check if king can move
   const possible = getAvailableMoves(
     ChessEnum.KING,
-    ...kingCoords,
+    SIZE - 1 - kingCoords[0],
+    SIZE - 1 - kingCoords[1],
     color,
-    board
+    flipped
   );
   if (possible.length === 0) {
     // find the pieces that threaten the king
@@ -125,7 +134,7 @@ const isCheckMate = (color, board) => {
     // checkmate if threatening piece can't be taken or blocked
     const canRemoveObstacle = supporting.some(({ coords, moves }) => {
       const canTakeOrBlock = moves.some(([x, y]) => {
-        const newBoard = generateNewBoard(...coords, x, y, board);
+        const newBoard = generateNewBoard(...coords, x, y, flipped);
         return !isInCheck(color, newBoard);
       });
       return canTakeOrBlock;

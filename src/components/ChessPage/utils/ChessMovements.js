@@ -153,14 +153,11 @@ const availablePawnMoves = (row, col, color, board, initial) => {
   // prevent recursively checking
   if (!initial) return possible;
 
-  // see if any of the moves will put the king in check
-  for (const [x, y] of possible) {
+  // filter out all moves that would expose king to check
+  return possible.filter(([x, y]) => {
     const newBoard = generateNewBoard(row, col, x, y, board);
-    if (isInCheck(color, newBoard)) return [];
-  }
-
-  // return possible moves
-  return possible;
+    return !isInCheck(color, newBoard);
+  });
 };
 
 // bishops can move diagonally
