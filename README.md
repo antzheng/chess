@@ -1,1 +1,1 @@
-[antzheng.github.io/chess](antzheng.github.io/chess)
+[https://antzheng.github.io/chess/](https://antzheng.github.io/chess/)
